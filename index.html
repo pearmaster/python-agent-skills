@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python for Agent Skills</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #4facfe;
+            --code-bg: #1e1e1e;
+            --border-color: #333;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        .slide {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .slide.active {
+            display: flex;
+        }
+        h1 { font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--accent-color); }
+        h2 { font-size: 2.8rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+        p { font-size: 1.8rem; max-width: 900px; line-height: 1.6; }
+        pre {
+            background-color: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: left;
+            width: 80%;
+            max-height: 40vh;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+        }
+        code { color: #f8f8f2; }
+        ul { text-align: left; font-size: 1.6rem; }
+        li { margin-bottom: 15px; }
+        .nav-hint { position: fixed; bottom: 20px; left: 20px; font-size: 1rem; opacity: 0.4; }
+        .slide-number {
+            position: absolute;
+            right: 30px;
+            bottom: 20px;
+            font-size: 1rem;
+            opacity: 0.5;
+        }
+        .slide { position: relative; }
+    </style>
+</head>
+<body>
+
+<div class="slide active">
+    <h1>Python for Agent Skills</h1>
+    <p>Building robust, scalable capabilities with clean code.</p>
+</div>
+
+<div class="slide">
+    <h2>Example Skill: SKILL.md</h2>
+    <pre>
+---
+name: csv-summarizer
+description: Summarizes a CSV file into row/column counts and sample rows.
+---
+
+# CSV Summarizer
+
+Run the script:
+
+    uv run --no-project scripts/summarize.py --file data.csv
+
+Outputs JSON with row count, column names, and a sample.
+    </pre>
+    <p>Learn more at <a href="https://agentskills.io" style="color: var(--accent-color);">https://agentskills.io</a></p>
+</div>
+
+<div class="slide">
+    <h2>Agent Skill Challenges</h2>
+    <ul>
+        <li><b>Operating environment:</b> OS, shell, Python version, and installed packages vary</li>
+        <li><b>Tools available:</b> Don't assume git, curl, uv, or network access exists</li>
+        <li><b>Permissions:</b> Filesystem and command execution may be restricted</li>
+        <li>Design scripts to detect and report missing tools, and degrade gracefully</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Why Python?</h2>
+    <ul>
+        <li><b>Ecosystem:</b> Massive library support (HTTP requests, data parsing, etc.)</li>
+        <li><b>Readability:</b> Easy for humans to maintain and agents to reason about</li>
+        <li><b>Portability:</b> Simple packaging with `uv` or Docker</li>
+        <li><b>Standardization:</b> Consistent error handling and CLI patterns</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Skill Anatomy</h2>
+    <pre>
+skill_name/
+  |-- SKILL.md (metadata)
+  |-- scripts/
+  |    |-- main.py
+  |    |-- utils.py
+  |-- references/
+  |-- assets/</pre>
+    <p>(Structure for a generic "csv-summarizer" skill)</p>
+</div>
+
+<div class="slide">
+    <h2>PEP 723 Inline Metadata</h2>
+    <p>Use script headers to define dependencies without manual environment management.</p>
+    <pre>
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests",
+#     "pandas"
+# ]
+# ///
+
+import pandas as pd
+...</pre>
+</div>
+
+<div class="slide">
+    <h2>Running with `uv`</h2>
+    <p>Use <code>uv</code> to run scripts in ephemeral, managed environments.</p>
+    <pre>
+# Run the script directly without management overhead:
+uv run --no-project scripts/summarize.py --file data.csv</pre>
+</div>
+
+<div class="slide">
+    <h2>CLI Design: Argparse</h2>
+    <p>Every skill should have a clear CLI interface.</p>
+    <pre>
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--file", required=True, help="Path to input file")
+parser.add_argument("--format", choices=["json", "csv"], default="json")
+args = parser.parse_args()</pre>
+</div>
+
+<div class="slide">
+    <h2>Config via Env Vars</h2>
+    <p>Never hardcode secrets.</p>
+    <ul>
+        <li><b>Good:</b> <code>os.environ.get("API_KEY")</code></li>
+        <li><b>Bad:</b> <code>API_KEY = "sk-12345..."</code></li>
+        <li>Use a `.env` file for local development, but never commit it to Git.</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Output Contracts</h2>
+    <ul>
+        <li><b>stdout:</b> Valid JSON only (the agent's primary input)</li>
+        <li><b>stderr:</b> Logging and diagnostic information</li>
+        <li><b>Exit Codes:</b> Use <code>0</code> for success, non-zero for failure.</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Shared Helpers</h2>
+    <p>Keep skills slim by utilizing a shared internal library or project structure.</p>
+    <pre>
+from my_sdk.common import fetch_data, validate_schema
+
+def main():
+    raw = fetch_data()
+    validate_schema(raw)
+    print(json.dumps({"status": "success", "data": raw}))</pre>
+</div>
+
+<div class="slide">
+    <h2>Fail-Fast Error Handling</h2>
+    <p>Be explicit about what went wrong.</p>
+    <ul>
+        <li>Catch expected exceptions (ConnectionError, FileNotFoundError)</li>
+        <li>Provide <i>human-readable</i> error messages to stderr</li>
+        <li>Ensure the agent knows exactly why the tool failed.</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Testing Strategy</h2>
+    <ul>
+        <li><b>Unit Tests:</b> Test individual utility functions</li>
+        <li><b>Integration Tests:</b> Run the script via <code>uv run</code> with dummy inputs</li>
+        <li><b>Mocking:</b> Use <i>Pytest</i> mocks for API calls to avoid hitting real endpoints</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Publishing & Distribution</h2>
+    <ul>
+        <li>Version your scripts using Git tags</li>
+        <li>Provide a clear <code>setup.sh</code> or <code>requirements.txt</code> if needed</li>
+        <li>Ensure the skill is "self-contained" enough to run in any clean environment</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Anti-Patterns</h2>
+    <ul>
+        <li>Interactive prompts (the agent can't type)</li>
+        <li>Long-running operations without progress/feedback</li>
+        <li>Printing extra debug text to stdout</li>
+        <li>Hardcoded URLs or local file paths</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h2>Takeaways</h2>
+    <ul>
+        <li>Use <b>PEP 621 / PEP 723</b> for deps.</li>
+        <li>Standardize on <b>JSON stdout</b>.</li>
+        <li>Keep scripts <b>stateless and deterministic</b>.</li>
+        <li>Design for the agent (clear help text, distinct errors).</li>
+    </ul>
+</div>
+
+<div class="slide">
+    <h1>Questions?</h1>
+    <p>Thank you!</p>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+
+    function showSlide(n) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (n + slides.length) % slides.length;
+        slides[currentSlide].classList.add('active');
+        document.getElementById('slideNumber').textContent = (currentSlide + 1) + ' / ' + slides.length;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+            showSlide(currentSlide + 1);
+        } else if (e.key === 'ArrowLeft') {
+            showSlide(currentSlide - 1);
+        }
+    });
+</script>
+
+<div class="nav-hint">Use Arrow Keys or Space to navigate</div>
+<div class="slide-number" id="slideNumber">1</div>
+<script>
+    document.getElementById('slideNumber').textContent = '1 / ' + document.querySelectorAll('.slide').length;
+</script>
+</body>
+</html>
