@@ -60,6 +60,40 @@
             opacity: 0.5;
         }
         .slide { position: relative; }
+        .spectrum {
+            display: flex;
+            align-items: center;
+            width: 90%;
+            gap: 20px;
+        }
+        .spectrum-word {
+            flex: 0 0 auto;
+            font-size: 2.6rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        .spectrum-shaft {
+            flex: 1 1 auto;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 5px;
+        }
+        .spectrum-head-left,
+        .spectrum-head-right {
+            flex: 0 0 auto;
+            width: 0;
+            height: 0;
+            border-top: 24px solid transparent;
+            border-bottom: 24px solid transparent;
+        }
+        .spectrum-head-left { border-right: 44px solid var(--accent-color); }
+        .spectrum-head-right { border-left: 44px solid var(--accent-color); }
+        .big-bold {
+            font-size: 4.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +101,7 @@
 <div class="slide active">
     <h1>Python for Agent Skills</h1>
     <p>Building robust, scalable capabilities with clean code.</p>
+    <p>Jacob Brunson</p>
 </div>
 
 <div class="slide">
@@ -75,13 +110,14 @@
 ---
 name: csv-summarizer
 description: Summarizes a CSV file into row/column counts and sample rows.
+compatibility: Requires uv as a dependency.
 ---
 
 # CSV Summarizer
 
 Run the script:
 
-    uv run --no-project scripts/summarize.py --file data.csv
+    uv run --no-project scripts/summarize.py
 
 Outputs JSON with row count, column names, and a sample.
     </pre>
@@ -89,22 +125,27 @@ Outputs JSON with row count, column names, and a sample.
 </div>
 
 <div class="slide">
-    <h2>Agent Skill Challenges</h2>
-    <ul>
-        <li><b>Operating environment:</b> OS, shell, Python version, and installed packages vary</li>
-        <li><b>Tools available:</b> Don't assume git, curl, uv, or network access exists</li>
-        <li><b>Permissions:</b> Filesystem and command execution may be restricted</li>
-        <li>Design scripts to detect and report missing tools, and degrade gracefully</li>
-    </ul>
+    <div class="spectrum">
+        <span class="spectrum-word">minimal</span>
+        <span class="spectrum-head-left"></span>
+        <span class="spectrum-shaft"></span>
+        <span class="spectrum-head-right"></span>
+        <span class="spectrum-word">specific</span>
+    </div>
 </div>
 
 <div class="slide">
     <h2>Why Python?</h2>
+    <p class="big-bold">uv</p>
+    <p><a href="https://docs.astral.sh/uv/" style="color: var(--accent-color);">https://docs.astral.sh/uv/</a></p>
+</div>
+
+<div class="slide">
+    <h2>What is uv?</h2>
     <ul>
-        <li><b>Ecosystem:</b> Massive library support (HTTP requests, data parsing, etc.)</li>
-        <li><b>Readability:</b> Easy for humans to maintain and agents to reason about</li>
-        <li><b>Portability:</b> Simple packaging with `uv` or Docker</li>
-        <li><b>Standardization:</b> Consistent error handling and CLI patterns</li>
+        <li>An extremely fast Python package and project manager, written in Rust</li>
+        <li>Installs Python versions, manages dependencies, and creates virtual environments</li>
+        <li>Runs single-file scripts with inline (PEP 723) dependency metadata</li>
     </ul>
 </div>
 
@@ -112,13 +153,31 @@ Outputs JSON with row count, column names, and a sample.
     <h2>Skill Anatomy</h2>
     <pre>
 skill_name/
-  |-- SKILL.md (metadata)
+  |-- SKILL.md
   |-- scripts/
   |    |-- main.py
   |    |-- utils.py
   |-- references/
   |-- assets/</pre>
-    <p>(Structure for a generic "csv-summarizer" skill)</p>
+</div>
+
+<div class="slide">
+    <h2>Example Skill: SKILL.md</h2>
+    <pre>
+---
+name: csv-summarizer
+description: Summarizes a CSV file into row/column counts and sample rows.
+compatibility: Requires uv as a dependency.
+---
+
+# CSV Summarizer
+
+Run the script:
+
+    uv run --no-project scripts/summarize.py
+
+Outputs JSON with row count, column names, and a sample.
+    </pre>
 </div>
 
 <div class="slide">
@@ -134,7 +193,10 @@ skill_name/
 # ///
 
 import pandas as pd
-...</pre>
+
+if __name__ == '__main__':
+   print(pd)
+</pre>
 </div>
 
 <div class="slide">
@@ -163,56 +225,16 @@ args = parser.parse_args()</pre>
     <ul>
         <li><b>Good:</b> <code>os.environ.get("API_KEY")</code></li>
         <li><b>Bad:</b> <code>API_KEY = "sk-12345..."</code></li>
-        <li>Use a `.env` file for local development, but never commit it to Git.</li>
+        <li>Be careful with `.env` files in your project workspace, since AIs typically can read anything in your workspace.</li>
     </ul>
 </div>
 
 <div class="slide">
     <h2>Output Contracts</h2>
     <ul>
-        <li><b>stdout:</b> Valid JSON only (the agent's primary input)</li>
+        <li><b>stdout:</b> Easy to parse text or structured data (like JSON)</li>
         <li><b>stderr:</b> Logging and diagnostic information</li>
         <li><b>Exit Codes:</b> Use <code>0</code> for success, non-zero for failure.</li>
-    </ul>
-</div>
-
-<div class="slide">
-    <h2>Shared Helpers</h2>
-    <p>Keep skills slim by utilizing a shared internal library or project structure.</p>
-    <pre>
-from my_sdk.common import fetch_data, validate_schema
-
-def main():
-    raw = fetch_data()
-    validate_schema(raw)
-    print(json.dumps({"status": "success", "data": raw}))</pre>
-</div>
-
-<div class="slide">
-    <h2>Fail-Fast Error Handling</h2>
-    <p>Be explicit about what went wrong.</p>
-    <ul>
-        <li>Catch expected exceptions (ConnectionError, FileNotFoundError)</li>
-        <li>Provide <i>human-readable</i> error messages to stderr</li>
-        <li>Ensure the agent knows exactly why the tool failed.</li>
-    </ul>
-</div>
-
-<div class="slide">
-    <h2>Testing Strategy</h2>
-    <ul>
-        <li><b>Unit Tests:</b> Test individual utility functions</li>
-        <li><b>Integration Tests:</b> Run the script via <code>uv run</code> with dummy inputs</li>
-        <li><b>Mocking:</b> Use <i>Pytest</i> mocks for API calls to avoid hitting real endpoints</li>
-    </ul>
-</div>
-
-<div class="slide">
-    <h2>Publishing & Distribution</h2>
-    <ul>
-        <li>Version your scripts using Git tags</li>
-        <li>Provide a clear <code>setup.sh</code> or <code>requirements.txt</code> if needed</li>
-        <li>Ensure the skill is "self-contained" enough to run in any clean environment</li>
     </ul>
 </div>
 
@@ -221,9 +243,38 @@ def main():
     <ul>
         <li>Interactive prompts (the agent can't type)</li>
         <li>Long-running operations without progress/feedback</li>
-        <li>Printing extra debug text to stdout</li>
-        <li>Hardcoded URLs or local file paths</li>
     </ul>
+</div>
+
+<div class="slide">
+    <h2>Installing</h2>
+    <h3>uvx agent-skills-installer</h3>
+    <pre>
+        ? Select destination directory: ~/.agents/skills/
+? Directory /home/jacob/.agents/skills does not exist. Create it? Yes
+? Select source git repo: https://github.com/googleworkspace/cli
+
+⏳ Fetching https://github.com/googleworkspace/cli …
+Found 95 skill(s).
+
+? Select skills to install (space to toggle, enter to confirm): gws-calendar                     Google Calendar: Manage calendars and events.
+
+┌─────────────────────────────────────────────
+│  Install Summary
+├─────────────────────────────────────────────
+│  Destination : /home/jacob/.agents/skills
+│  Source repo : https://github.com/googleworkspace/cli
+│  Skills:
+│    • gws-calendar
+└─────────────────────────────────────────────
+
+? Proceed? Yes
+
+  ✅ Installed gws-calendar → /home/jacob/.agents/skills/gws-calendar
+
+🎉 Done! 1 skill(s) installed to /home/jacob/.agents/skills
+
+    </pre>
 </div>
 
 <div class="slide">
